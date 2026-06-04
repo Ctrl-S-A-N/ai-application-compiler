@@ -246,13 +246,3 @@ python -m evaluation.evaluation_runner
 5. **Observe Progress**: Watch the real-time progress indicator as the compiler completes extraction, planning, generation, validation, repair, and runtime synthesis.
 6. **Inspect Artifacts**: Use the tabbed navigation panel on the right to inspect the raw structured JSON of the `IntentIR`, validation schemas, and the finalized `Runtime Generation Report`.
 
-## 19. Screenshots
-
-### Reviewer Demo UI
-![Pipeline UI](docs/images/pipeline-ui.png)
-
-### Validation Report Output
-![Validation Report](docs/images/validation-report.png)
-
-### Final Executable Runtime Output
-![Runtime Output](docs/images/runtime-output.png)
