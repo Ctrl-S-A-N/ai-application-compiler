@@ -11,7 +11,9 @@ from compiler.contracts import (
     Entity,
     EntityField,
     FieldType,
+    Integration,
     IntentIR,
+    IntentEntity,
     Page,
     Permission,
     Role,
@@ -23,6 +25,8 @@ def test_intent_ir_requires_rationale_and_rejects_unknown_fields() -> None:
     intent = IntentIR(
         application_type=ApplicationType.CRM,
         features=(),
+        entities=(IntentEntity(name="Contact", rationale="Contacts are the primary CRM records."),),
+        integrations=(Integration(name="Stripe", provider="stripe", required=False, rationale="Payments may be optional."),),
         roles=(Role(name="admin", rationale="Administrators manage the application."),),
         plans=(),
         rationale="CRM is the closest supported application type.",
@@ -30,6 +34,8 @@ def test_intent_ir_requires_rationale_and_rejects_unknown_fields() -> None:
 
     assert intent.application_type == ApplicationType.CRM
     assert intent.roles[0].name == "admin"
+    assert intent.entities[0].name == "Contact"
+    assert intent.integrations[0].provider == "stripe"
 
     with pytest.raises(ValidationError):
         IntentIR.model_validate(
@@ -37,6 +43,8 @@ def test_intent_ir_requires_rationale_and_rejects_unknown_fields() -> None:
                 "application_type": "CRM",
                 "features": [],
                 "roles": [],
+                "entities": [],
+                "integrations": [],
                 "plans": [],
                 "rationale": "Valid rationale.",
                 "unexpected": "rejected",
@@ -71,6 +79,8 @@ def test_json_schema_for_exports_contract_schema() -> None:
 
     assert schema["title"] == "IntentIR"
     assert "application_type" in schema["properties"]
+    assert "entities" in schema["properties"]
+    assert "integrations" in schema["properties"]
     assert schema["additionalProperties"] is False
 
 
@@ -80,4 +90,3 @@ def test_architecture_decision_log_file_matches_contract() -> None:
 
     assert len(decision_log.decisions) >= 1
     assert all(decision.rationale for decision in decision_log.decisions)
-

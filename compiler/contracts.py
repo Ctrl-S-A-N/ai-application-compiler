@@ -44,6 +44,16 @@ class Plan(RationaleContract):
     name: str = Field(min_length=1)
 
 
+class IntentEntity(RationaleContract):
+    name: str = Field(min_length=1)
+
+
+class Integration(RationaleContract):
+    name: str = Field(min_length=1)
+    provider: str = Field(min_length=1)
+    required: bool
+
+
 class Assumption(RationaleContract):
     id: str = Field(min_length=1)
     description: str = Field(min_length=1)
@@ -59,6 +69,8 @@ class IntentIR(RationaleContract):
     application_type: ApplicationType
     features: tuple[Feature, ...] = Field(default_factory=tuple)
     roles: tuple[Role, ...] = Field(default_factory=tuple)
+    entities: tuple[IntentEntity, ...] = Field(default_factory=tuple)
+    integrations: tuple[Integration, ...] = Field(default_factory=tuple)
     plans: tuple[Plan, ...] = Field(default_factory=tuple)
     assumptions: tuple[Assumption, ...] = Field(default_factory=tuple)
     clarification_questions: tuple[ClarificationQuestion, ...] = Field(default_factory=tuple)
@@ -117,12 +129,6 @@ class BusinessRule(RationaleContract):
     id: str = Field(min_length=1)
     description: str = Field(min_length=1)
     applies_to: tuple[str, ...] = Field(default_factory=tuple)
-
-
-class Integration(RationaleContract):
-    name: str = Field(min_length=1)
-    provider: str = Field(min_length=1)
-    required: bool
 
 
 class ArchitectureManifest(RationaleContract):
@@ -239,4 +245,3 @@ class ArchitectureDecisionLog(StrictContract):
 
 def json_schema_for(model: type[BaseModel]) -> dict[str, Any]:
     return model.model_json_schema()
-
