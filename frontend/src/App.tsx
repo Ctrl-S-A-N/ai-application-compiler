@@ -17,7 +17,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<CompileResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<keyof CompileResponse>('intent_ir');
+  const [activeTab, setActiveTab] = useState<keyof CompileResponse | 'summary'>('summary');
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -37,7 +37,7 @@ export default function App() {
       
       const result: CompileResponse = await response.json();
       setData(result);
-      setActiveTab('intent_ir');
+      setActiveTab('summary');
     } catch (err: any) {
       setError(err.message || 'An error occurred during compilation.');
     } finally {
@@ -49,7 +49,8 @@ export default function App() {
     navigator.clipboard.writeText(text);
   };
 
-  const tabs: { key: keyof CompileResponse; label: string }[] = [
+  const tabs: { key: keyof CompileResponse | 'summary'; label: string }[] = [
+    { key: 'summary', label: 'Summary' },
     { key: 'intent_ir', label: 'Intent IR' },
     { key: 'architecture', label: 'Architecture Manifest' },
     { key: 'ui_schema', label: 'UI Schema' },
@@ -61,7 +62,34 @@ export default function App() {
     { key: 'runtime_report', label: 'Runtime Generation Report' }
   ];
 
+  const renderSummary = () => {
+    if (!data) return null;
+    return (
+      <div className="p-4 bg-white rounded border border-gray-200">
+        <h3 className="font-bold text-lg mb-4 border-b pb-2">Application Summary</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><span className="font-semibold text-gray-600">Application Type:</span> {data.intent_ir?.application_type || 'N/A'}</div>
+          <div><span className="font-semibold text-gray-600">Features:</span> {data.intent_ir?.features?.map((f: any) => f.name).join(', ') || 'None'}</div>
+          <div><span className="font-semibold text-gray-600">Roles:</span> {data.intent_ir?.roles?.map((r: any) => r.name).join(', ') || 'None'}</div>
+          <div><span className="font-semibold text-gray-600">Pages:</span> {data.architecture?.pages?.map((p: any) => p.name).join(', ') || 'None'}</div>
+          <div><span className="font-semibold text-gray-600">Database Tables:</span> {data.db_schema?.tables?.map((t: any) => t.name).join(', ') || 'None'}</div>
+          <div><span className="font-semibold text-gray-600">API Endpoint Count:</span> {data.api_schema?.endpoints?.length || 0}</div>
+          <div><span className="font-semibold text-gray-600">Validation Status:</span> {data.validation_report?.valid ? <span className="text-green-600">Valid</span> : <span className="text-red-600">Invalid</span>}</div>
+          <div>
+            <span className="font-semibold text-gray-600">Repair Status:</span> {
+              data.repair_report 
+                ? (data.repair_report.revalidation_passed ? <span className="text-green-600">Repaired Successfully</span> : <span className="text-red-600">Repair Failed</span>)
+                : <span className="text-gray-500">Not Required</span>
+            }
+          </div>
+          <div><span className="font-semibold text-gray-600">Runtime Status:</span> {data.runtime_report?.success ? <span className="text-green-600">Success</span> : <span className="text-red-600">Failed</span>}</div>
+        </div>
+      </div>
+    );
+  };
+
   const renderJsonViewer = (content: any) => {
+    if (activeTab === 'summary') return renderSummary();
     if (!content) return <div className="p-4 text-gray-500">No data available (Skipped or Empty)</div>;
     const jsonString = JSON.stringify(content, null, 2);
     return (
@@ -153,7 +181,7 @@ export default function App() {
             </div>
             <div className="p-4 overflow-auto flex-1 bg-white">
               <h2 className="text-xl font-bold mb-4 text-gray-800">{tabs.find(t => t.key === activeTab)?.label}</h2>
-              {renderJsonViewer(data[activeTab])}
+              {renderJsonViewer(activeTab === 'summary' ? null : data[activeTab as keyof CompileResponse])}
             </div>
           </>
         ) : (
