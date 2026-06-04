@@ -26,14 +26,21 @@ The current implementation contains strict Pydantic contracts for:
 
 Every generated artifact has a required `rationale` field. Models forbid unknown fields, validate references where Phase 1 owns the contract, and expose JSON Schema through `json_schema_for(...)`.
 
+Phase 2 adds deterministic, independently testable compiler stages:
+
+- `extract_intent(...)` converts natural language requirements into `IntentIR`.
+- `plan_architecture(...)` converts `IntentIR` into `ArchitectureManifest`.
+- Both stages write JSON execution logs and return Pydantic models only.
+- Vague, conflicting, and underspecified prompts are represented with structured assumptions and clarification questions.
+
 ```text
 app/
   main.py                  FastAPI health surface
 compiler/
   contracts.py             Strict IR, spec, and log contracts
   logging.py               JSON execution logs for compiler stages
-  intent_extractor.py      Phase 2 contract export
-  architecture_planner.py  Phase 2 contract export
+  intent_extractor.py      Deterministic natural language to IntentIR stage
+  architecture_planner.py  Deterministic IntentIR to ArchitectureManifest stage
   schema_generators/       Phase 3 reserved modules
 schemas/
   README.md                Schema contract policy
@@ -74,4 +81,3 @@ Install development dependencies, then run:
 ```powershell
 python -m pytest
 ```
-

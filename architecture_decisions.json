@@ -32,6 +32,17 @@
         "Evaluation can aggregate latency, validation failures, repair attempts, and status."
       ],
       "rationale": "Compiler behavior must be measurable across validation, repair, and runtime generation stages."
+    },
+    {
+      "id": "ADR-004",
+      "title": "Phase 2 uses deterministic structured planners",
+      "status": "accepted",
+      "decision": "Intent extraction and architecture planning are implemented as deterministic functions that return strict Pydantic models, with no free-form pipeline output.",
+      "consequences": [
+        "Phase 2 behavior is reproducible in tests without relying on model availability or sampling controls.",
+        "Future Instructor or PydanticAI adapters can be added behind the same IntentIR and ArchitectureManifest contracts."
+      ],
+      "rationale": "The compiler must prioritize reliability, validation, and temperature-zero execution before introducing LLM orchestration."
     }
   ]
 }
