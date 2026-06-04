@@ -43,6 +43,17 @@
         "Future Instructor or PydanticAI adapters can be added behind the same IntentIR and ArchitectureManifest contracts."
       ],
       "rationale": "The compiler must prioritize reliability, validation, and temperature-zero execution before introducing LLM orchestration."
+    },
+    {
+      "id": "ADR-005",
+      "title": "Architecture manifests are traceable and schema-generator ready",
+      "status": "accepted",
+      "decision": "Architecture elements carry source_intent_fields, pages reference existing flows, roles require permissions, business rules reference existing roles or entities, and integrations expose API-oriented capabilities.",
+      "consequences": [
+        "Phase 3 schema generators can consume ArchitectureManifest without reparsing natural language.",
+        "Future validators can detect missing role permissions, page-flow gaps, invalid business rule references, and integration mapping defects."
+      ],
+      "rationale": "The ArchitectureManifest must be a deterministic bridge from IntentIR to schema generation, not a loose descriptive document."
     }
   ]
 }

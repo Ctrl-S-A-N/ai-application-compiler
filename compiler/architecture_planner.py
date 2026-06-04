@@ -31,9 +31,17 @@ def plan_architecture(intent: IntentIR, log_dir: Path = DEFAULT_LOG_DIR) -> Arch
 
 
 def _plan_architecture(intent: IntentIR) -> ArchitectureManifest:
-    roles = tuple(intent.roles) or (
-        Role(name="admin", rationale="An admin role is required for privileged application management."),
-        Role(name="user", rationale="A user role is required for standard application access."),
+    roles = tuple(_role_with_traceability(role) for role in intent.roles) or (
+        Role(
+            name="admin",
+            source_intent_fields=("assumptions",),
+            rationale="An admin role is required for privileged application management.",
+        ),
+        Role(
+            name="user",
+            source_intent_fields=("assumptions",),
+            rationale="A user role is required for standard application access.",
+        ),
     )
     role_names = tuple(role.name for role in roles)
     entities = tuple(_entity_from_intent_entity(entity.name) for entity in intent.entities)
@@ -42,13 +50,14 @@ def _plan_architecture(intent: IntentIR) -> ArchitectureManifest:
             Entity(
                 name="Record",
                 fields=_default_fields_for("Record"),
+                source_intent_fields=("assumptions", "clarification_questions"),
                 rationale="A generic record entity keeps the architecture valid when the prompt lacks data details.",
             ),
         )
 
-    pages = _build_pages(entities, role_names)
     permissions = _build_permissions(entities, role_names)
     user_flows = _build_user_flows(entities, role_names)
+    pages = _build_pages(entities, role_names, user_flows)
     business_rules = _build_business_rules(intent, entities)
     assumptions = list(intent.assumptions)
     if any(question.blocking for question in intent.clarification_questions):
@@ -67,7 +76,7 @@ def _plan_architecture(intent: IntentIR) -> ArchitectureManifest:
         roles=roles,
         permissions=permissions,
         business_rules=business_rules,
-        integrations=intent.integrations,
+        integrations=tuple(_integration_with_traceability(integration) for integration in intent.integrations),
         assumptions=tuple(assumptions),
         clarification_questions=intent.clarification_questions,
         rationale="The architecture is generated deterministically from IntentIR roles, entities, features, integrations, and assumptions.",
@@ -78,31 +87,35 @@ def _entity_from_intent_entity(name: str) -> Entity:
     return Entity(
         name=name,
         fields=_default_fields_for(name),
+        source_intent_fields=("entities",),
         rationale=f"{name} is promoted from IntentIR into a normalized architecture entity.",
     )
 
 
 def _default_fields_for(entity_name: str) -> tuple[EntityField, ...]:
     fields = [
-        EntityField(name="id", field_type=FieldType.UUID, required=True, unique=True, rationale=f"{entity_name} needs a stable identifier."),
-        EntityField(name="name", field_type=FieldType.STRING, required=True, rationale=f"{entity_name} needs a human-readable name."),
-        EntityField(name="created_at", field_type=FieldType.DATETIME, required=True, rationale=f"{entity_name} needs creation tracking."),
-        EntityField(name="updated_at", field_type=FieldType.DATETIME, required=True, rationale=f"{entity_name} needs update tracking."),
+        EntityField(name="id", field_type=FieldType.UUID, required=True, unique=True, source_intent_fields=("entities",), rationale=f"{entity_name} needs a stable identifier."),
+        EntityField(name="name", field_type=FieldType.STRING, required=True, source_intent_fields=("entities",), rationale=f"{entity_name} needs a human-readable name."),
+        EntityField(name="created_at", field_type=FieldType.DATETIME, required=True, source_intent_fields=("entities",), rationale=f"{entity_name} needs creation tracking."),
+        EntityField(name="updated_at", field_type=FieldType.DATETIME, required=True, source_intent_fields=("entities",), rationale=f"{entity_name} needs update tracking."),
     ]
     lower_name = entity_name.lower()
     if lower_name in {"contact", "user", "customer", "lead"}:
-        fields.insert(2, EntityField(name="email", field_type=FieldType.EMAIL, required=False, unique=False, rationale=f"{entity_name} commonly needs email contact data."))
+        fields.insert(2, EntityField(name="email", field_type=FieldType.EMAIL, required=False, unique=False, source_intent_fields=("entities", "features"), rationale=f"{entity_name} commonly needs email contact data."))
     if lower_name in {"invoice", "order", "deal"}:
-        fields.insert(2, EntityField(name="amount", field_type=FieldType.FLOAT, required=False, rationale=f"{entity_name} commonly tracks monetary value."))
+        fields.insert(2, EntityField(name="amount", field_type=FieldType.FLOAT, required=False, source_intent_fields=("entities", "features"), rationale=f"{entity_name} commonly tracks monetary value."))
     return tuple(fields)
 
 
-def _build_pages(entities: tuple[Entity, ...], role_names: tuple[str, ...]) -> tuple[Page, ...]:
+def _build_pages(entities: tuple[Entity, ...], role_names: tuple[str, ...], user_flows: tuple[UserFlow, ...]) -> tuple[Page, ...]:
+    flow_names = {flow.name for flow in user_flows}
     pages = [
         Page(
             name="Dashboard",
             route="/dashboard",
             allowed_roles=role_names,
+            flow_names=("Sign in and open dashboard",),
+            source_intent_fields=("roles", "features"),
             rationale="A dashboard gives authenticated roles a landing page for core workflows.",
         )
     ]
@@ -113,6 +126,8 @@ def _build_pages(entities: tuple[Entity, ...], role_names: tuple[str, ...]) -> t
                 name=f"{entity.name} List",
                 route=route,
                 allowed_roles=role_names,
+                flow_names=(f"Manage {entity.name}",) if f"Manage {entity.name}" in flow_names else ("Sign in and open dashboard",),
+                source_intent_fields=("entities", "roles"),
                 rationale=f"{entity.name} records need a list and management surface.",
             )
         )
@@ -130,6 +145,7 @@ def _build_permissions(entities: tuple[Entity, ...], role_names: tuple[str, ...]
                         role=role_name,
                         action=action,
                         resource=entity.name,
+                        source_intent_fields=("roles", "entities"),
                         rationale=f"{role_name} receives {action} access for {entity.name} based on its role level.",
                     )
                 )
@@ -141,6 +157,8 @@ def _build_user_flows(entities: tuple[Entity, ...], role_names: tuple[str, ...])
         UserFlow(
             name="Sign in and open dashboard",
             steps=("open_login", "submit_credentials", "view_dashboard"),
+            related_pages=("Dashboard",),
+            source_intent_fields=("roles", "features"),
             rationale="Role-aware applications need an entry flow before protected pages.",
         )
     ]
@@ -150,6 +168,8 @@ def _build_user_flows(entities: tuple[Entity, ...], role_names: tuple[str, ...])
             UserFlow(
                 name=f"Manage {entity.name}",
                 steps=(f"{primary_role}_opens_{entity.name.lower()}_list", f"{primary_role}_creates_{entity.name.lower()}", f"{primary_role}_reviews_{entity.name.lower()}"),
+                related_pages=(f"{entity.name} List",),
+                source_intent_fields=("entities", "roles"),
                 rationale=f"{entity.name} needs an end-to-end management flow for architecture validation.",
             )
         )
@@ -157,11 +177,16 @@ def _build_user_flows(entities: tuple[Entity, ...], role_names: tuple[str, ...])
 
 
 def _build_business_rules(intent: IntentIR, entities: tuple[Entity, ...]) -> tuple[BusinessRule, ...]:
+    entity_names = tuple(entity.name for entity in entities)
+    role_names = tuple(role.name for role in intent.roles) or ("admin", "user")
     rules = [
         BusinessRule(
             id="role_permissions_required",
             description="Every protected page and mutating operation must be covered by a declared role permission.",
             applies_to=("auth", "ui", "api"),
+            referenced_entities=entity_names,
+            referenced_roles=role_names,
+            source_intent_fields=("roles", "entities"),
             rationale="Role consistency is required before later schema generation and validation.",
         )
     ]
@@ -171,6 +196,9 @@ def _build_business_rules(intent: IntentIR, entities: tuple[Entity, ...]) -> tup
                 id="plan_access_enforced",
                 description="Plan-specific features must be checked before users access gated workflows.",
                 applies_to=("auth", "ui", "api"),
+                referenced_entities=entity_names,
+                referenced_roles=role_names,
+                source_intent_fields=("plans", "roles"),
                 rationale="Plans in IntentIR imply access constraints across product layers.",
             )
         )
@@ -180,6 +208,9 @@ def _build_business_rules(intent: IntentIR, entities: tuple[Entity, ...]) -> tup
                 id="integration_failures_are_visible",
                 description="Required integrations must expose user-visible failure states and retry-safe server behavior.",
                 applies_to=("ui", "api"),
+                referenced_entities=entity_names,
+                referenced_roles=role_names,
+                source_intent_fields=("integrations", "roles"),
                 rationale="External dependencies can fail and must be represented in the architecture.",
             )
         )
@@ -189,7 +220,28 @@ def _build_business_rules(intent: IntentIR, entities: tuple[Entity, ...]) -> tup
                 id="entity_model_requires_clarification",
                 description="The data model must be clarified before runtime generation.",
                 applies_to=("db", "api", "ui"),
+                referenced_roles=role_names,
+                source_intent_fields=("clarification_questions",),
                 rationale="Runtime generation cannot be reliable without stable entities.",
             )
         )
     return tuple(rules)
+
+
+def _role_with_traceability(role: Role) -> Role:
+    if role.source_intent_fields:
+        return role
+    return role.model_copy(update={"source_intent_fields": ("roles",)})
+
+
+def _integration_with_traceability(integration):
+    updates = {}
+    if not integration.source_intent_fields:
+        updates["source_intent_fields"] = ("integrations",)
+    if not integration.capabilities:
+        updates["capabilities"] = ("external_api",)
+    if integration.api_base_path is None:
+        updates["api_base_path"] = f"/integrations/{integration.provider}"
+    if not updates:
+        return integration
+    return integration.model_copy(update=updates)

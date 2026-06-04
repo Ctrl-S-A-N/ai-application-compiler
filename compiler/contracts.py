@@ -19,6 +19,7 @@ class StrictContract(BaseModel):
 
 class RationaleContract(StrictContract):
     rationale: str = Field(min_length=1)
+    source_intent_fields: tuple[str, ...] = Field(default_factory=tuple)
 
 
 class ApplicationType(StrEnum):
@@ -52,6 +53,8 @@ class Integration(RationaleContract):
     name: str = Field(min_length=1)
     provider: str = Field(min_length=1)
     required: bool
+    capabilities: tuple[str, ...] = Field(default_factory=tuple)
+    api_base_path: str | None = Field(default=None, pattern=r"^/")
 
 
 class Assumption(RationaleContract):
@@ -112,11 +115,13 @@ class Page(RationaleContract):
     name: str = Field(min_length=1)
     route: str = Field(pattern=r"^/")
     allowed_roles: tuple[str, ...] = Field(default_factory=tuple)
+    flow_names: tuple[str, ...] = Field(default_factory=tuple)
 
 
 class UserFlow(RationaleContract):
     name: str = Field(min_length=1)
     steps: tuple[str, ...] = Field(min_length=1)
+    related_pages: tuple[str, ...] = Field(default_factory=tuple)
 
 
 class Permission(RationaleContract):
@@ -129,6 +134,8 @@ class BusinessRule(RationaleContract):
     id: str = Field(min_length=1)
     description: str = Field(min_length=1)
     applies_to: tuple[str, ...] = Field(default_factory=tuple)
+    referenced_entities: tuple[str, ...] = Field(default_factory=tuple)
+    referenced_roles: tuple[str, ...] = Field(default_factory=tuple)
 
 
 class ArchitectureManifest(RationaleContract):
@@ -143,12 +150,32 @@ class ArchitectureManifest(RationaleContract):
     clarification_questions: tuple[ClarificationQuestion, ...] = Field(default_factory=tuple)
 
     @model_validator(mode="after")
-    def references_existing_roles(self) -> ArchitectureManifest:
+    def references_are_consistent(self) -> ArchitectureManifest:
         role_names = {role.name for role in self.roles}
+        entity_names = {entity.name for entity in self.entities}
+        flow_names = {flow.name for flow in self.user_flows}
         unknown_permission_roles = [permission.role for permission in self.permissions if permission.role not in role_names]
         unknown_page_roles = [role for page in self.pages for role in page.allowed_roles if role not in role_names]
         if unknown_permission_roles or unknown_page_roles:
             raise ValueError("permissions and page access rules must reference existing roles")
+        roles_without_permissions = [role.name for role in self.roles if not any(permission.role == role.name for permission in self.permissions)]
+        if roles_without_permissions:
+            raise ValueError("every role must have at least one permission")
+        pages_without_flows = [page.name for page in self.pages if not page.flow_names]
+        unknown_page_flows = [flow for page in self.pages for flow in page.flow_names if flow not in flow_names]
+        if pages_without_flows or unknown_page_flows:
+            raise ValueError("every page must reference at least one existing user flow")
+        rules_without_references = [rule.id for rule in self.business_rules if not rule.referenced_entities and not rule.referenced_roles]
+        unknown_rule_entities = [entity for rule in self.business_rules for entity in rule.referenced_entities if entity not in entity_names]
+        unknown_rule_roles = [role for rule in self.business_rules for role in rule.referenced_roles if role not in role_names]
+        if rules_without_references or unknown_rule_entities or unknown_rule_roles:
+            raise ValueError("business rules must reference existing entities or roles")
+        architecture_elements = (
+            [*self.entities, *self.user_flows, *self.pages, *self.roles, *self.permissions, *self.business_rules, *self.integrations]
+        )
+        missing_traceability = [element.rationale for element in architecture_elements if not element.source_intent_fields]
+        if missing_traceability:
+            raise ValueError("every architecture element must include source_intent_fields")
         return self
 
 

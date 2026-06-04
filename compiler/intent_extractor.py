@@ -178,7 +178,7 @@ def _extract_intent(requirements: str) -> IntentIR:
                 rationale="The prompt names too few explicit features, but CRUD is the minimum useful SaaS scaffold behavior.",
             )
         )
-        features.append(Feature(name="crud", rationale="CRUD is assumed as the minimum executable application behavior."))
+        features.append(Feature(name="crud", source_intent_fields=("assumptions",), rationale="CRUD is assumed as the minimum executable application behavior."))
 
     if not roles:
         assumptions.append(
@@ -190,8 +190,8 @@ def _extract_intent(requirements: str) -> IntentIR:
         )
         roles.extend(
             [
-                Role(name="admin", rationale="An admin role is needed for privileged management actions."),
-                Role(name="user", rationale="A user role is needed for standard product access."),
+                Role(name="admin", source_intent_fields=("assumptions",), rationale="An admin role is needed for privileged management actions."),
+                Role(name="user", source_intent_fields=("assumptions",), rationale="A user role is needed for standard product access."),
             ]
         )
 
@@ -221,7 +221,7 @@ def _detect_application_type(normalized: str) -> ApplicationType:
 
 def _detect_features(normalized: str) -> list[Feature]:
     return [
-        Feature(name=name, rationale=f"The prompt references {name} capability keywords.")
+        Feature(name=name, source_intent_fields=("requirements",), rationale=f"The prompt references {name} capability keywords.")
         for name, keywords in FEATURE_KEYWORDS
         if any(keyword in normalized for keyword in keywords)
     ]
@@ -229,18 +229,18 @@ def _detect_features(normalized: str) -> list[Feature]:
 
 def _detect_roles(normalized: str, features: list[Feature]) -> list[Role]:
     roles = [
-        Role(name=name, rationale=f"The prompt references the {name} role.")
+        Role(name=name, source_intent_fields=("requirements", "roles"), rationale=f"The prompt references the {name} role.")
         for name, keywords in ROLE_KEYWORDS
         if any(keyword in normalized for keyword in keywords)
     ]
     if any(feature.name == "authentication" for feature in features) and not roles:
-        roles.append(Role(name="user", rationale="Authentication implies at least a standard authenticated user role."))
+        roles.append(Role(name="user", source_intent_fields=("features",), rationale="Authentication implies at least a standard authenticated user role."))
     return roles
 
 
 def _detect_plans(normalized: str) -> list[Plan]:
     return [
-        Plan(name=name, rationale=f"The prompt references the {name} plan.")
+        Plan(name=name, source_intent_fields=("requirements", "plans"), rationale=f"The prompt references the {name} plan.")
         for name, keywords in PLAN_KEYWORDS
         if any(keyword in normalized for keyword in keywords)
     ]
@@ -252,14 +252,14 @@ def _detect_entities(
     features: list[Feature],
 ) -> list[IntentEntity]:
     entities = [
-        IntentEntity(name=name, rationale=f"The prompt references {name.lower()} data.")
+        IntentEntity(name=name, source_intent_fields=("requirements", "entities"), rationale=f"The prompt references {name.lower()} data.")
         for name, keywords in ENTITY_KEYWORDS
         if any(keyword in normalized for keyword in keywords)
     ]
     if not entities and application_type is ApplicationType.CRM:
-        entities.append(IntentEntity(name="Contact", rationale="CRM applications require contacts as a core data object."))
+        entities.append(IntentEntity(name="Contact", source_intent_fields=("application_type",), rationale="CRM applications require contacts as a core data object."))
     if not entities and any(feature.name == "tasks" for feature in features):
-        entities.append(IntentEntity(name="Task", rationale="Task features require a task data object."))
+        entities.append(IntentEntity(name="Task", source_intent_fields=("features",), rationale="Task features require a task data object."))
     return entities
 
 
@@ -269,6 +269,9 @@ def _detect_integrations(normalized: str) -> list[Integration]:
             name=name,
             provider=provider,
             required=provider in normalized,
+            capabilities=_integration_capabilities(provider),
+            api_base_path=f"/integrations/{provider}",
+            source_intent_fields=("requirements", "integrations"),
             rationale=f"The prompt references {name} integration keywords.",
         )
         for name, provider, keywords in INTEGRATION_KEYWORDS
@@ -280,6 +283,17 @@ def _has_auth_conflict(normalized: str) -> bool:
     rejects_auth = any(re.search(pattern, normalized) for pattern in NEGATED_AUTH_PATTERNS)
     requires_auth = any(re.search(pattern, normalized) for pattern in AUTH_REQUIRED_PATTERNS)
     return rejects_auth and requires_auth
+
+
+def _integration_capabilities(provider: str) -> tuple[str, ...]:
+    capabilities_by_provider = {
+        "stripe": ("payments", "webhooks"),
+        "sendgrid": ("email",),
+        "twilio": ("sms",),
+        "slack": ("notifications",),
+        "google": ("oauth",),
+    }
+    return capabilities_by_provider.get(provider, ("external_api",))
 
 
 def _dedupe_by_name(items: list[NamedItem]) -> list[NamedItem]:
