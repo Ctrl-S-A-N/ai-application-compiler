@@ -23,7 +23,7 @@ structured-output = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=app --cov=compiler --cov-report=term-missing --cov-fail-under=80"
+addopts = "--cov=app --cov=compiler --cov-report=term-missing --cov-fail-under=90"
 pythonpath = ["."]
 
 [tool.coverage.run]

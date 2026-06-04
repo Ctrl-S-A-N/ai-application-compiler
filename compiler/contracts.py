@@ -214,6 +214,160 @@ class AuthPolicy(RationaleContract):
     permissions: tuple[str, ...] = Field(default_factory=tuple)
 
 
+class UILayout(RationaleContract):
+    name: str = Field(min_length=1)
+    regions: tuple[str, ...] = Field(min_length=1)
+
+
+class UIComponentSchema(RationaleContract):
+    id: str = Field(min_length=1)
+    component_type: str = Field(min_length=1)
+    page_route: str = Field(pattern=r"^/")
+    bound_entity: str | None = None
+    bound_fields: tuple[str, ...] = Field(default_factory=tuple)
+
+
+class UIFormSchema(RationaleContract):
+    id: str = Field(min_length=1)
+    page_route: str = Field(pattern=r"^/")
+    entity: str = Field(min_length=1)
+    fields: tuple[str, ...] = Field(default_factory=tuple)
+    submit_action: str = Field(min_length=1)
+
+
+class UINavigationItem(RationaleContract):
+    id: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+    route: str = Field(pattern=r"^/")
+    allowed_roles: tuple[str, ...] = Field(min_length=1)
+
+
+class UIRoleVisibility(RationaleContract):
+    role: str = Field(min_length=1)
+    page_routes: tuple[str, ...] = Field(default_factory=tuple)
+
+
+class UIPageSchema(RationaleContract):
+    name: str = Field(min_length=1)
+    route: str = Field(pattern=r"^/")
+    layout: str = Field(min_length=1)
+    component_ids: tuple[str, ...] = Field(default_factory=tuple)
+    form_ids: tuple[str, ...] = Field(default_factory=tuple)
+    navigation_item_ids: tuple[str, ...] = Field(default_factory=tuple)
+    role_visibility: tuple[str, ...] = Field(min_length=1)
+
+
+class UISchema(RationaleContract):
+    pages: tuple[UIPageSchema, ...] = Field(default_factory=tuple)
+    layouts: tuple[UILayout, ...] = Field(default_factory=tuple)
+    components: tuple[UIComponentSchema, ...] = Field(default_factory=tuple)
+    forms: tuple[UIFormSchema, ...] = Field(default_factory=tuple)
+    navigation: tuple[UINavigationItem, ...] = Field(default_factory=tuple)
+    role_visibility: tuple[UIRoleVisibility, ...] = Field(default_factory=tuple)
+
+
+class APIFieldSchema(RationaleContract):
+    name: str = Field(min_length=1)
+    field_type: FieldType
+    required: bool
+
+
+class APIModelSchema(RationaleContract):
+    name: str = Field(min_length=1)
+    fields: tuple[APIFieldSchema, ...] = Field(default_factory=tuple)
+
+
+class APIValidationRule(RationaleContract):
+    model: str = Field(min_length=1)
+    field: str = Field(min_length=1)
+    rule: str = Field(min_length=1)
+
+
+class APIEndpointSchema(RationaleContract):
+    name: str = Field(min_length=1)
+    method: HttpMethod
+    path: str = Field(pattern=r"^/")
+    request_model: str | None = None
+    response_model: str = Field(min_length=1)
+    required_permission: str = Field(min_length=1)
+
+
+class APISchema(RationaleContract):
+    endpoints: tuple[APIEndpointSchema, ...] = Field(default_factory=tuple)
+    methods: tuple[HttpMethod, ...] = Field(default_factory=tuple)
+    request_models: tuple[APIModelSchema, ...] = Field(default_factory=tuple)
+    response_models: tuple[APIModelSchema, ...] = Field(default_factory=tuple)
+    validation_rules: tuple[APIValidationRule, ...] = Field(default_factory=tuple)
+
+
+class DatabaseFieldSchema(RationaleContract):
+    name: str = Field(min_length=1)
+    field_type: FieldType
+    nullable: bool
+    unique: bool
+
+
+class DatabaseRelationship(RationaleContract):
+    from_table: str = Field(min_length=1)
+    to_table: str = Field(min_length=1)
+    relationship_type: str = Field(min_length=1)
+
+
+class DatabaseConstraint(RationaleContract):
+    table: str = Field(min_length=1)
+    constraint_type: str = Field(min_length=1)
+    fields: tuple[str, ...] = Field(min_length=1)
+
+
+class DatabaseIndex(RationaleContract):
+    table: str = Field(min_length=1)
+    fields: tuple[str, ...] = Field(min_length=1)
+    unique: bool
+
+
+class DatabaseTableSchema(RationaleContract):
+    name: str = Field(min_length=1)
+    entity: str = Field(min_length=1)
+    fields: tuple[DatabaseFieldSchema, ...] = Field(default_factory=tuple)
+
+
+class DatabaseSchema(RationaleContract):
+    tables: tuple[DatabaseTableSchema, ...] = Field(default_factory=tuple)
+    fields: tuple[DatabaseFieldSchema, ...] = Field(default_factory=tuple)
+    relationships: tuple[DatabaseRelationship, ...] = Field(default_factory=tuple)
+    constraints: tuple[DatabaseConstraint, ...] = Field(default_factory=tuple)
+    indexes: tuple[DatabaseIndex, ...] = Field(default_factory=tuple)
+
+
+class AuthRoleSchema(RationaleContract):
+    name: str = Field(min_length=1)
+
+
+class AuthPermissionSchema(RationaleContract):
+    role: str = Field(min_length=1)
+    action: str = Field(min_length=1)
+    resource: str = Field(min_length=1)
+
+
+class AuthAccessPolicy(RationaleContract):
+    role: str = Field(min_length=1)
+    page_routes: tuple[str, ...] = Field(default_factory=tuple)
+    permissions: tuple[str, ...] = Field(default_factory=tuple)
+
+
+class AuthFeatureGate(RationaleContract):
+    feature: str = Field(min_length=1)
+    roles: tuple[str, ...] = Field(min_length=1)
+    required_integration: str | None = None
+
+
+class AuthSchema(RationaleContract):
+    roles: tuple[AuthRoleSchema, ...] = Field(default_factory=tuple)
+    permissions: tuple[AuthPermissionSchema, ...] = Field(default_factory=tuple)
+    access_policies: tuple[AuthAccessPolicy, ...] = Field(default_factory=tuple)
+    feature_gating: tuple[AuthFeatureGate, ...] = Field(default_factory=tuple)
+
+
 class AppSpec(RationaleContract):
     application_type: ApplicationType
     entities: tuple[Entity, ...] = Field(default_factory=tuple)

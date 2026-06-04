@@ -33,6 +33,14 @@ Phase 2 adds deterministic, independently testable compiler stages:
 - Both stages write JSON execution logs and return Pydantic models only.
 - Vague, conflicting, and underspecified prompts are represented with structured assumptions and clarification questions.
 
+Phase 3 adds isolated schema generators:
+
+- `generate_ui_schema(...)` emits `UISchema`.
+- `generate_api_schema(...)` emits `APISchema`.
+- `generate_database_schema(...)` emits `DatabaseSchema`.
+- `generate_auth_schema(...)` emits `AuthSchema`.
+- Each generator consumes `ArchitectureManifest` and `AppSpec`, writes its own execution log, and does not read the original prompt.
+
 ```text
 app/
   main.py                  FastAPI health surface
@@ -41,7 +49,7 @@ compiler/
   logging.py               JSON execution logs for compiler stages
   intent_extractor.py      Deterministic natural language to IntentIR stage
   architecture_planner.py  Deterministic IntentIR to ArchitectureManifest stage
-  schema_generators/       Phase 3 reserved modules
+  schema_generators/       Independent UI/API/DB/Auth schema generators
 schemas/
   README.md                Schema contract policy
 logs/
