@@ -1,0 +1,9 @@
+{
+  "stage": "auth_schema_generation",
+  "start_time": "2026-06-04T19:33:25.766149Z",
+  "end_time": "2026-06-04T19:33:25.767157Z",
+  "latency_ms": 0.5465000867843628,
+  "validation_errors": [],
+  "repair_attempts": 0,
+  "success_status": true
+}

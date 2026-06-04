@@ -1,0 +1,9 @@
+{
+  "stage": "intent_extraction",
+  "start_time": "2026-06-04T19:33:25.753130Z",
+  "end_time": "2026-06-04T19:33:25.754162Z",
+  "latency_ms": 0.9794000070542097,
+  "validation_errors": [],
+  "repair_attempts": 0,
+  "success_status": true
+}

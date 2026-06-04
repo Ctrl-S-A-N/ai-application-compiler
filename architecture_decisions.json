@@ -65,6 +65,18 @@
         "Later validation and repair phases can compare strict schema contracts without reparsing natural language."
       ],
       "rationale": "Independent schema generation reduces shared mutable state and makes targeted repair possible in later phases."
+    },
+    {
+      "id": "ADR-007",
+      "title": "Phase 4 validation is deterministic and rule-based",
+      "status": "accepted",
+      "decision": "The validation engine checks JSON validity, contract round-trip, required fields, type safety, and cross-layer consistency (UI↔API, API↔DB, Auth↔UI, BusinessRules↔All) using pure functions with no LLM calls.",
+      "consequences": [
+        "Validation is reproducible and testable without model availability or sampling variance.",
+        "Each cross-layer check is independently testable via schema modification.",
+        "Future repair phases can consume the ValidationReport to target fixes at specific layers."
+      ],
+      "rationale": "Deterministic validation is a prerequisite for reliable repair and runtime generation. LLM-based validation would introduce non-determinism and latency without adding value for structural consistency checks."
     }
   ]
 }

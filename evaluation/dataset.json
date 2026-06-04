@@ -1,0 +1,66 @@
+{
+  "realistic": [
+    {
+      "id": "crm",
+      "prompt": "Build a CRM with contacts, sales pipelines, dashboards, admin and sales representative roles. I need to track leads and closed deals."
+    },
+    {
+      "id": "lms",
+      "prompt": "Create a Learning Management System with courses, students, instructors, and lessons. Instructors can create courses, students can enroll and track progress."
+    },
+    {
+      "id": "ecommerce",
+      "prompt": "Develop an E-commerce store with products, categories, shopping carts, orders, customers, and store managers. Include Stripe payment integration."
+    },
+    {
+      "id": "inventory",
+      "prompt": "Build an Inventory Management System with warehouses, stock items, suppliers, purchase orders, and warehouse managers."
+    },
+    {
+      "id": "hrms",
+      "prompt": "Create a Human Resources Management System (HRMS) tracking employees, departments, leave requests, payroll, and HR admins."
+    },
+    {
+      "id": "project_management",
+      "prompt": "Develop a Project Management tool with projects, tasks, comments, assignees, and a kanban board view. Roles include project manager and team member."
+    },
+    {
+      "id": "restaurant_management",
+      "prompt": "Build a Restaurant Management system to handle table reservations, menu items, orders, chefs, and waitstaff."
+    },
+    {
+      "id": "hospital_management",
+      "prompt": "Create a Hospital Management system tracking patients, doctors, appointments, medical records, and receptionists."
+    },
+    {
+      "id": "event_platform",
+      "prompt": "Develop an Event Ticketing platform with events, venues, tickets, attendees, and event organizers. Attendees can buy tickets online."
+    },
+    {
+      "id": "subscription_saas",
+      "prompt": "Build a B2B SaaS platform for expense tracking. Needs companies, expenses, categories, employees, and billing admins. Must integrate with Plaid."
+    }
+  ],
+  "edge_cases": [
+    {
+      "id": "vague_prompt",
+      "prompt": "Make an app to do things with users and data."
+    },
+    {
+      "id": "contradictory_prompt",
+      "prompt": "Build an app with a strict admin role, but make sure anonymous users can delete the database and change passwords for anyone."
+    },
+    {
+      "id": "missing_requirements",
+      "prompt": "I need a shopping cart but don't add products or users to the system."
+    },
+    {
+      "id": "unusual_roles",
+      "prompt": "Create an app where the primary roles are 'Dog', 'Cat', and 'Mouse'. Dogs manage Cats, and Cats eat Mice. Keep track of bones."
+    },
+    {
+      "id": "conflicting_permissions",
+      "prompt": "Build a file storage app. Users can upload files. Nobody can read files. Everyone can edit files even if they can't read them."
+    }
+  ]
+}

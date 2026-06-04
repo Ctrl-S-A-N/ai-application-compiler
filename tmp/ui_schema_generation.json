@@ -1,0 +1,9 @@
+{
+  "stage": "ui_schema_generation",
+  "start_time": "2026-06-04T19:33:25.761849Z",
+  "end_time": "2026-06-04T19:33:25.761849Z",
+  "latency_ms": 0.3132999408990145,
+  "validation_errors": [],
+  "repair_attempts": 0,
+  "success_status": true
+}

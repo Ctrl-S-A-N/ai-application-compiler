@@ -424,5 +424,65 @@ class ArchitectureDecisionLog(StrictContract):
     decisions: tuple[ArchitectureDecision, ...]
 
 
+class ValidationSeverity(StrEnum):
+    ERROR = "error"
+    WARNING = "warning"
+
+
+class ValidationIssue(StrictContract):
+    severity: ValidationSeverity
+    layer: str = Field(min_length=1)
+    code: str = Field(min_length=1)
+    message: str = Field(min_length=1)
+    source_ref: str | None = None
+
+
+class ValidationReport(StrictContract):
+    issues: tuple[ValidationIssue, ...] = Field(default_factory=tuple)
+    valid: bool
+    layers_validated: tuple[str, ...] = Field(default_factory=tuple)
+    cross_layer_checks: tuple[str, ...] = Field(default_factory=tuple)
+
+class RepairAction(StrictContract):
+    """A single minimal repair action targeting one schema layer."""
+    error_code: str = Field(min_length=1)
+    affected_layer: str = Field(min_length=1)
+    repair_action: str = Field(min_length=1)
+    source_ref: str | None = None
+
+
+class RepairTask(StrictContract):
+    """A planned set of repair actions derived from a ValidationReport."""
+    actions: tuple[RepairAction, ...] = Field(default_factory=tuple)
+    source_validation_issues: int = Field(ge=0)
+
+
+class RepairResult(StrictContract):
+    """Outcome of executing a single RepairAction."""
+    error_code: str = Field(min_length=1)
+    affected_layer: str = Field(min_length=1)
+    repair_action: str = Field(min_length=1)
+    repaired_artifact: str = Field(min_length=1)
+    success: bool
+    detail: str = Field(min_length=1)
+
+
+class RepairLog(StrictContract):
+    """Aggregate repair outcome with tracking metadata."""
+    results: tuple[RepairResult, ...] = Field(default_factory=tuple)
+    total_issues: int = Field(ge=0)
+    issues_repaired: int = Field(ge=0)
+    issues_unrepaired: int = Field(ge=0)
+    revalidation_passed: bool
+
+class RuntimeGenerationReport(StrictContract):
+    success: bool
+    generated_files: tuple[str, ...] = Field(default_factory=tuple)
+    backend_routes_compiled: bool
+    database_schema_valid: bool
+    frontend_artifacts_produced: bool
+    details: str = Field(default="")
+
+
 def json_schema_for(model: type[BaseModel]) -> dict[str, Any]:
     return model.model_json_schema()
