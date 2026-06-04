@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+const API_BASE =
+  import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 type CompileResponse = {
   intent_ir: any;
   architecture: any;
@@ -25,7 +28,7 @@ export default function App() {
     setData(null);
     
     try {
-      const response = await fetch('http://localhost:8000/api/compile', {
+      const response = await fetch(`${API_BASE}/api/compile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })
